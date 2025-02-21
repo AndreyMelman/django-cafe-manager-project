@@ -25,6 +25,7 @@ class Dish(models.Model):
 class Order(models.Model):
     class Meta:
         verbose_name = "Order"
+        ordering = ("-id",)
 
     STATUS_CHOICES = [
         ("pending", "В ожидании"),
