@@ -1,0 +1,152 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+  <div class="container mt-4">
+    <h1 class="mb-4">🍔 Управление заказами</h1>
+
+    <div class="card mb-4">
+      <div class="card-body">
+        <form method="GET" class="row g-3">
+          <div class="col-md-4">
+            <input type="number" name="table_number" class="form-control"
+                   placeholder="Номер стола" value="{{ current_table }}">
+          </div>
+          <div class="col-md-4">
+            <select name="status" class="form-select">
+              <option value="">Все статусы</option>
+              <option value="pending" {% if current_status == "pending" %}selected{% endif %}>
+                В ожидании
+              </option>
+              <option value="ready" {% if current_status == "ready" %}selected{% endif %}>
+                Готово
+              </option>
+              <option value="paid" {% if current_status == "paid" %}selected{% endif %}>
+                Оплачено
+              </option>
+            </select>
+          </div>
+          <div class="col-md-4">
+            <button type="submit" class="btn btn-primary w-100">
+              <i class="fas fa-search me-2"></i>Найти
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <div class="mb-4">
+      <a href="{% url 'add_order' %}" class="btn btn-success">
+        <i class="fas fa-plus-circle me-2"></i>Новый заказ
+      </a>
+      <a href="{% url 'revenue' %}" class="btn btn-outline-dark">
+        <i class="fas fa-chart-bar me-2"></i>Выручка
+      </a>
+    </div>
+
+    <div class="card">
+      <div class="card-body">
+        <div class="table-responsive">
+          <table class="table table-hover align-middle">
+            <thead class="table-light">
+            <tr>
+              <th>ID</th>
+              <th>Стол</th>
+              <th>Состав заказа</th>
+              <th>Сумма</th>
+              <th>Статус</th>
+              <th>Действия</th>
+            </tr>
+            </thead>
+            <tbody>
+            {% for order in orders %}
+              <tr>
+                <td>{{ order.id }}</td>
+                <td>{{ order.table_number }}</td>
+                <td>
+                  {% for item in order.items.all %}
+                    <div class="d-flex justify-content-between border-bottom pb-1 mb-2">
+                      <div>
+                        <span class="badge bg-secondary me-2">{{ item.quantity }}x</span>
+                        {{ item.dish.name }}
+                      </div>
+                      <div>{{ item.price }} ₽</div>
+                    </div>
+                  {% endfor %}
+                </td>
+                <td class="fw-bold">{{ order.total_price }} ₽</td>
+                <td>
+                  <form method="POST" action="{% url 'update_status' order.id %}">
+                    {% csrf_token %}
+                    <select name="status"
+                            class="form-select status-{{  order.status}}"
+                            onchange="this.form.submit()">
+                      <option value="pending" {% if  order.status == 'pending' %}selected{% endif %}>
+                        В ожидании
+                      </option>
+                      <option value="ready" {% if order.status == 'ready' %}selected{% endif %}>
+                        Готово
+                      </option>
+                      <option value="paid" {% if order.status == 'paid' %}selected{% endif %}>
+                        Оплачено
+                      </option>
+                    </select>
+                  </form>
+                </td>
+                <td>
+                  <form method="POST" action="{% url 'delete_order' order.id %}"
+                        class="d-inline"
+                        onsubmit="return confirm('Удалить заказ #{{ order.id }}?');">
+                    {% csrf_token %}
+                    <button type="submit" class="btn btn-danger btn-sm">
+                      <i class="fas fa-trash-alt"></i>
+                    </button>
+                  </form>
+                </td>
+              </tr>
+            {% empty %}
+              <tr>
+                <td colspan="6" class="text-center text-muted py-4">
+                  <i class="fas fa-clipboard-list fa-2x mb-3"></i><br>
+                  Нет активных заказов
+                </td>
+              </tr>
+            {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+{% endblock content%}
+
+{% block extra_css %}
+  <style>
+      .status-pending {
+          background: #fff3cd;
+          border-color: #ffeeba;
+      }
+
+      .status-ready {
+          background: #d4edda;
+          border-color: #c3e6cb;
+      }
+
+      .status-paid {
+          background: #cce5ff;
+          border-color: #b8daff;
+      }
+
+      .status-pending:hover,
+      .status-ready:hover,
+      .status-paid:hover {
+          filter: brightness(95%);
+      }
+
+      .table-hover tr:hover .status-pending,
+      .table-hover tr:hover .status-ready,
+      .table-hover tr:hover .status-paid {
+          filter: brightness(90%);
+      }
+  </style>
+{% endblock extra_css%}
