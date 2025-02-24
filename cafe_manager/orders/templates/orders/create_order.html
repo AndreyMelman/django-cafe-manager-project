@@ -1,0 +1,141 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2 class="mb-4">📝 Создание нового заказа</h2>
+
+    <form method="post" novalidate>
+        {% csrf_token %}
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title">Основная информация</h5>
+                <div class="row">
+                    <div class="col-md-4">
+                        <div class="mb-3">
+                            {{ form.table_number.label_tag }}
+                            {{ form.table_number }}
+                            {% if form.table_number.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ form.table_number.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card mb-4">
+            <div class="card-body">
+                <h5 class="card-title mb-4">🍽 Позиции заказа</h5>
+
+                {{ formset.management_form }}
+
+                <div id="items-container">
+                    {% for item_form in formset %}
+                    <div class="item-form row g-3 mb-3">
+                        <div class="col-md-6">
+                            {{ item_form.dish.label_tag }}
+                            {{ item_form.dish }}
+                            {% if item_form.dish.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ item_form.dish.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-4">
+                            {{ item_form.quantity.label_tag }}
+                            {{ item_form.quantity }}
+                            {% if item_form.quantity.errors %}
+                                <div class="invalid-feedback d-block">
+                                    {{ item_form.quantity.errors }}
+                                </div>
+                            {% endif %}
+                        </div>
+
+                        <div class="col-md-2 pt-4">
+                            {% if item_form.DELETE %}
+                                {{ item_form.DELETE.label_tag }}
+                                {{ item_form.DELETE }}
+                            {% endif %}
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                <button type="button" class="btn btn-outline-secondary mt-3"
+                        onclick="addNewForm()">
+                    <i class="bi bi-plus-circle"></i> Добавить позицию
+                </button>
+            </div>
+        </div>
+
+        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+            <button type="submit" class="btn btn-primary btn-lg">
+                <i class="bi bi-check-circle"></i> Создать заказ
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const totalForms = document.getElementById('id_form-TOTAL_FORMS');
+    let formCount = parseInt(totalForms.value);
+
+    const emptyForm = document.querySelector('.item-form').cloneNode(true);
+    emptyForm.querySelectorAll('input, select').forEach(input => {
+        input.value = '';
+        input.removeAttribute('value');
+        if(input.tagName === 'SELECT') input.selectedIndex = 0;
+    });
+
+    window.addNewForm = function() {
+        const newForm = emptyForm.cloneNode(true);
+        const newIndex = formCount++;
+
+        newForm.innerHTML = newForm.innerHTML.replace(
+            /form-(\d+)-/g,
+            `form-${newIndex}-`
+        );
+
+        newForm.querySelectorAll('input, select').forEach(input => {
+            if(input.type !== 'hidden' && !input.name.includes('DELETE')) {
+                input.value = '';
+                if(input.tagName === 'SELECT') input.selectedIndex = 0;
+            }
+        });
+
+        document.getElementById('items-container').appendChild(newForm);
+        totalForms.value = formCount;
+    }
+});
+</script>
+
+<style>
+.item-form {
+    padding: 1rem;
+    border: 1px solid #dee2e6;
+    border-radius: 0.25rem;
+    margin-bottom: 1rem;
+    background-color: #f8f9fa;
+    transition: all 0.3s ease;
+}
+
+.item-form:hover {
+    background-color: #e9ecef;
+}
+
+.invalid-feedback {
+    display: block !important;
+}
+
+.form-control:invalid,
+.form-select:invalid {
+    border-color: #dc3545;
+}
+</style>
+{% endblock %}
