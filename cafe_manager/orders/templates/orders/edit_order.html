@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Редактировать заказ #{{ object.id }}</h2>
+
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+
+        <h4 class="mt-4">Блюда:</h4>
+        {{ formset.management_form }}
+
+        {% for form in formset %}
+        <div class="item-form mb-3 p-2 border">
+            {{ form.as_p }}
+            {% if form.instance.pk %}{{ form.DELETE }} Удалить{% endif %}
+        </div>
+        {% endfor %}
+
+        <button type="submit" class="btn btn-primary">Сохранить</button>
+        <a href="{% url 'order_list' %}" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>
+{% endblock %}

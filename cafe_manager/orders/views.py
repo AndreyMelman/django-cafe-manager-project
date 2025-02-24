@@ -25,7 +25,7 @@ class OrderListView(ListView):
 
         table_number = self.request.GET.get("table_number")
         status = self.request.GET.get("status")
-        sort_status = self.request.GET.get("sort", "")
+        sort_status = self.request.GET.get("sort_status", "asc")
 
         if table_number:
             queryset = queryset.filter(table_number=table_number)
@@ -33,10 +33,7 @@ class OrderListView(ListView):
         if status:
             queryset = queryset.filter(status=status)
 
-        if sort_status in ["asc", "desc"]:
-            queryset = queryset.order_by(
-                "status" if sort_status == "asc" else "-status"
-            )
+        queryset = queryset.order_by("status" if sort_status == "asc" else "-status")
 
         return queryset
 
@@ -84,16 +81,12 @@ class OrderCreateView(CreateView):
 class UpdateStatusView(UpdateView):
     model = Order
     fields = ["status"]
+
     success_url = reverse_lazy("order_list")
 
     def form_valid(self, form):
-        new_status = form.cleaned_data.get("status")
-        if new_status in dict(Order.STATUS_CHOICES):
-            messages.success(self.request, f"Статус заказа #{self.object.id} обновлен")
-            return super().form_valid(form)
-        else:
-            messages.error(self.request, "Неверный статус")
-            return self.form_invalid(form)
+        messages.success(self.request, f"Статус заказа #{self.object.id} обновлен")
+        return super().form_valid(form)
 
 
 class DeleteOrderView(DeleteView):
@@ -103,8 +96,12 @@ class DeleteOrderView(DeleteView):
     def delete(self, request, *args, **kwargs):
         order = self.get_object()
         order_id = order.id
-        response = super().delete(request, *args, **kwargs)
-        messages.success(request, f"Заказ #{order_id} удален")
+        try:
+            response = super().delete(request, *args, **kwargs)
+            messages.success(request, f"Заказ #{order_id} удален")
+        except Exception as e:
+            messages.error(request, f"Ошибка при удалении заказа #{order_id}: {e}")
+            return self.get(request, *args, **kwargs)
         return response
 
 
@@ -120,3 +117,26 @@ class RevenueView(TemplateView):
             or 0
         )
         return context
+
+
+class EditOrderView(UpdateView):
+    model = Order
+    fields = ["table_number"]
+    template_name = "orders/edit_order.html"
+    success_url = reverse_lazy("order_list")
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["formset"] = OrderItemFormSet(
+            queryset=OrderItem.objects.filter(order=self.object)
+        )
+        return context
+
+    def form_valid(self, form):
+        formset = OrderItemFormSet(
+            self.request.POST, queryset=OrderItem.objects.filter(order=self.object)
+        )
+        if formset.is_valid():
+            formset.save()
+            return super().form_valid(form)
+        return self.render_to_response(self.get_context_data(form=form))
