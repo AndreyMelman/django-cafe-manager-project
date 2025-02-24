@@ -3,9 +3,18 @@ from django.db import models
 from django.db.models import Sum
 from django.dispatch import receiver
 from django.db.models.signals import post_save, post_delete
+from decimal import Decimal
 
 
 class Dish(models.Model):
+    """
+    Модель блюда в меню.
+
+    Attributes:
+        name (str): Название блюда, уникальное
+        price (Decimal): Цена блюда
+    """
+
     class Meta:
         verbose_name = "Dish"
 
@@ -23,6 +32,17 @@ class Dish(models.Model):
 
 
 class Order(models.Model):
+    """
+    Модель заказа.
+    
+    Attributes:
+        table_number (int): Номер столика
+        status (str): Статус заказа (в ожидании/готово/оплачено)
+        total_price (Decimal): Общая стоимость заказа
+        created_at (datetime): Время создания заказа
+        updated_at (datetime): Время последнего обновления
+    """
+
     class Meta:
         verbose_name = "Order"
         ordering = ("-id",)
@@ -48,14 +68,33 @@ class Order(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     def update_total_price(self) -> None:
-        self.total_price = self.items.aggregate(total=Sum("price"))["total"] or 1
+        """Пересчитывает общую стоимость заказа на основе позиций."""
+        self.total_price = self.items.aggregate(
+            total=Sum("price")
+        )["total"] or Decimal("0.00")
         self.save()
+
+    def get_total_items(self) -> int:
+        return self.items.count()
+
+    def get_status_display(self) -> str:
+        return dict(self.STATUS_CHOICES)[self.status]
 
     def __str__(self) -> str:
         return f"Заказ {self.id} - Стол {self.table_number}"
 
 
 class OrderItem(models.Model):
+    """
+    Модель позиции в заказе.
+    
+    Attributes:
+        order (Order): Заказ, к которому относится позиция
+        dish (Dish): Заказанное блюдо
+        quantity (int): Количество
+        price (Decimal): Общая стоимость позиции (цена × количество)
+    """
+
     class Meta:
         verbose_name = "Order Item"
 
@@ -75,8 +114,12 @@ class OrderItem(models.Model):
         editable=False,
     )
 
+    def calculate_price(self) -> Decimal:
+        """Рассчитывает стоимость позиции на основе цены блюда и количества."""
+        return self.dish.price * self.quantity
+
     def save(self, *args: Any, **kwargs: Any) -> None:
-        self.price = self.dish.price * self.quantity
+        self.price = self.calculate_price()
         super().save(*args, **kwargs)
         self.order.update_total_price()
 
