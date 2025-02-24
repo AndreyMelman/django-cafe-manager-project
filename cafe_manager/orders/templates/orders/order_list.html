@@ -96,6 +96,9 @@
                   </form>
                 </td>
                 <td>
+                  <a href="{% url 'edit_order' order.id %}" class="btn btn-sm btn-warning">
+                    <i class="fas fa-edit"></i>
+                  </a>
                   <form method="POST" action="{% url 'delete_order' order.id %}"
                         class="d-inline"
                         onsubmit="return confirm('Удалить заказ #{{ order.id }}?');">
