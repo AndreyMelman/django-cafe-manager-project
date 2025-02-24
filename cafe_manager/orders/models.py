@@ -34,7 +34,7 @@ class Dish(models.Model):
 class Order(models.Model):
     """
     Модель заказа.
-    
+
     Attributes:
         table_number (int): Номер столика
         status (str): Статус заказа (в ожидании/готово/оплачено)
@@ -69,9 +69,9 @@ class Order(models.Model):
 
     def update_total_price(self) -> None:
         """Пересчитывает общую стоимость заказа на основе позиций."""
-        self.total_price = self.items.aggregate(
-            total=Sum("price")
-        )["total"] or Decimal("0.00")
+        self.total_price = self.items.aggregate(total=Sum("price"))["total"] or Decimal(
+            "0.00"
+        )
         self.save()
 
     def get_total_items(self) -> int:
@@ -87,7 +87,7 @@ class Order(models.Model):
 class OrderItem(models.Model):
     """
     Модель позиции в заказе.
-    
+
     Attributes:
         order (Order): Заказ, к которому относится позиция
         dish (Dish): Заказанное блюдо
