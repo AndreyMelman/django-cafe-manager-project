@@ -1,8 +1,6 @@
-from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Sum
 from django.urls import reverse_lazy
-from django.views import View
 from django.views.generic import (
     ListView,
     TemplateView,
@@ -12,7 +10,7 @@ from django.views.generic import (
 )
 
 from .forms import OrderForm, OrderItemFormSet
-from .models import Order, OrderItem, Dish
+from .models import Order, OrderItem
 
 
 class OrderListView(ListView):
