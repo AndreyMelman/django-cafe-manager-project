@@ -1,5 +1,6 @@
 from django import forms
 from django.forms import modelformset_factory
+from typing import Any
 
 from .models import Order, OrderItem
 
@@ -23,6 +24,11 @@ class OrderForm(forms.ModelForm):
         error_messages = {
             "table_number": {"required": "Укажите номер стола!"},
         }
+
+    def clean(self) -> dict[str, Any]:
+        cleaned_data = super().clean()
+
+        return cleaned_data
 
 
 class OrderItemForm(forms.ModelForm):
