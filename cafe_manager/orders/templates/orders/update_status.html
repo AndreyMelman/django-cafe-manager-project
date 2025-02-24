@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Обновление статуса заказа #{{ object.id }}</h2>
+    <form method="post">
+        {% csrf_token %}
+        {{ form.as_p }}
+        <button type="submit" class="btn btn-primary">Обновить статус</button>
+        <a href="{% url 'order_list' %}" class="btn btn-secondary">Отмена</a>
+    </form>
+</div>
+{% endblock %} 
