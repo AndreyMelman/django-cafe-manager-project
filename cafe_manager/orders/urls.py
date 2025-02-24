@@ -6,6 +6,7 @@ from .views import (
     UpdateStatusView,
     DeleteOrderView,
     RevenueView,
+    EditOrderView,
 )
 
 urlpatterns = [
@@ -14,4 +15,5 @@ urlpatterns = [
     path("update_status/<int:pk>/", UpdateStatusView.as_view(), name="update_status"),
     path("delete_order/<int:pk>/", DeleteOrderView.as_view(), name="delete_order"),
     path("revenue/", RevenueView.as_view(), name="revenue"),
+    path("edit/<int:pk>/", EditOrderView.as_view(), name="edit_order"),
 ]
