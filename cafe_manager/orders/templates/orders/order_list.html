@@ -54,7 +54,9 @@
               <th>Стол</th>
               <th>Состав заказа</th>
               <th>Сумма</th>
-              <th>Статус</th>
+              <th>
+                <a href="?sort_status={% if sort_status == 'asc' %}desc{% else %}asc{% endif %}">Статус</a>
+              </th>
               <th>Действия</th>
             </tr>
             </thead>

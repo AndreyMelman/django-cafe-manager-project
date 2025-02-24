@@ -25,6 +25,7 @@ class OrderListView(ListView):
 
         table_number = self.request.GET.get("table_number")
         status = self.request.GET.get("status")
+        sort_status = self.request.GET.get("sort", "")
 
         if table_number:
             queryset = queryset.filter(table_number=table_number)
@@ -32,12 +33,18 @@ class OrderListView(ListView):
         if status:
             queryset = queryset.filter(status=status)
 
+        if sort_status in ["asc", "desc"]:
+            queryset = queryset.order_by(
+                "status" if sort_status == "asc" else "-status"
+            )
+
         return queryset
 
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context["current_table"] = self.request.GET.get("table_number", "")
         context["current_status"] = self.request.GET.get("status", "")
+        context["sort_status"] = self.request.GET.get("sort_status", "asc")
         return context
 
 
