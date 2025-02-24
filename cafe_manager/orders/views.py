@@ -8,7 +8,7 @@ from django.views.generic import (
     UpdateView,
     DeleteView,
 )
-from typing import Dict, Any, Optional
+from typing import Any
 from django.http import HttpResponse, HttpRequest
 from django.db.transaction import atomic
 from django.forms import BaseForm, ModelForm
@@ -66,7 +66,7 @@ class OrderListView(ListView):
 
         return queryset
 
-    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+    def get_context_data(self, **kwargs) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
         context["current_table"] = self.request.GET.get("table_number", "")
         context["current_status"] = self.request.GET.get("status", "")
@@ -89,7 +89,7 @@ class OrderCreateView(CreateView):
     template_name = "orders/create_order.html"
     success_url = reverse_lazy("order_list")
 
-    def get_context_data(self, **kwargs) -> Dict[str, Any]:
+    def get_context_data(self, **kwargs) -> dict[str, Any]:
         context = super().get_context_data(**kwargs)
 
         if self.request.POST:
@@ -99,7 +99,7 @@ class OrderCreateView(CreateView):
         return context
 
     @atomic
-    def form_valid(self, form: BaseForm) -> HttpResponse:
+    def form_valid(self, form: ModelForm) -> HttpResponse:
         """
         Обрабатывает валидную форму создания заказа.
 
@@ -184,7 +184,7 @@ class DeleteOrderView(DeleteView):
     model = Order
     success_url = reverse_lazy("order_list")
 
-    def delete(self, request: HttpRequest, *args: Any, **kwargs: Any) -> HttpResponse:
+    def delete(self, request: HttpRequest, *args, **kwargs) -> HttpResponse:
         """
         Удаление заказа с проверкой возможности удаления.
 
@@ -223,7 +223,7 @@ class RevenueView(TemplateView):
 
     template_name = "orders/revenue.html"
 
-    def get_context_data(self, **kwargs: Any) -> Dict[str, Any]:
+    def get_context_data(self, **kwargs) -> dict[str, Any]:
         """
         Получение контекста с данными о выручке.
 
@@ -233,7 +233,7 @@ class RevenueView(TemplateView):
         Returns:
             Dict[str, Any]: Контекст шаблона с данными о выручке
         """
-        context: Dict[str, Any] = super().get_context_data(**kwargs)
+        context: dict[str, Any] = super().get_context_data(**kwargs)
         context["total_revenue"] = (
             Order.objects.filter(status=STATUS_PAID).aggregate(
                 total=Sum("total_price")
@@ -244,6 +244,13 @@ class RevenueView(TemplateView):
 
 
 class EditOrderView(UpdateView):
+    """
+    Представление для обновления заказа.
+
+    Attributes:
+        template_name: Шаблон страницы
+    """
+
     model = Order
     fields = ["table_number"]
     template_name = "orders/edit_order.html"
@@ -271,7 +278,6 @@ class EditOrderView(UpdateView):
                 messages.error(self.request, "Ошибка в позициях заказа")
                 return self.render_to_response(self.get_context_data(form=form))
 
-            # Проверяем, что заказ не останется пустым
             if not any(not getattr(item, "DELETE", False) for item in formset.forms):
                 messages.error(self.request, "Заказ не может быть пустым")
                 return self.render_to_response(self.get_context_data(form=form))

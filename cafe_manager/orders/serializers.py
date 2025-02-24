@@ -37,7 +37,7 @@ class OrderItemSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     """
     Сериализатор для модели Order.
-    
+
     Fields:
         id (int): ID заказа
         table_number (int): Номер столика
@@ -66,13 +66,13 @@ class OrderSerializer(serializers.ModelSerializer):
     def validate_table_number(self, value: int) -> int:
         """
         Проверяет корректность номера столика.
-        
+
         Args:
             value (int): Номер столика
-            
+
         Returns:
             int: Проверенный номер столика
-            
+
         Raises:
             ValidationError: Если номер столика некорректный
         """
@@ -85,7 +85,7 @@ class OrderSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("Некорректный статус заказа")
         return value
 
-    def validate(self, data: Dict[str, Any]) -> Dict[str, Any]:
-        if 'table_number' in data and data['table_number'] > 100:
+    def validate(self, data: dict[str, Any]) -> dict[str, Any]:
+        if "table_number" in data and data["table_number"] > 100:
             raise serializers.ValidationError("Номер столика не может быть больше 100")
         return data

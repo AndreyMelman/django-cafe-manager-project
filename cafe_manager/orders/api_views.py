@@ -5,12 +5,8 @@ from django.db.models import Count, Sum, QuerySet
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import transaction
 from .models import Order, Dish
-from .serializers import (
-    OrderSerializer,
-    DishSerializer,
-    OrderItemCreateSerializer
-)
-from .exceptions import OrderNotFoundError, InvalidOrderStatusError, DishNotFoundError
+from .serializers import OrderSerializer, DishSerializer, OrderItemCreateSerializer
+from .exceptions import OrderNotFoundError, DishNotFoundError
 from typing import Any, Optional
 from rest_framework.request import Request
 from rest_framework.serializers import ModelSerializer
@@ -19,7 +15,7 @@ from rest_framework.serializers import ModelSerializer
 class OrderViewSet(viewsets.ModelViewSet):
     """
     ViewSet для работы с заказами через API.
-    
+
     Endpoints:
     - GET /api/orders/ - список заказов
     - POST /api/orders/ - создание заказа
@@ -34,18 +30,12 @@ class OrderViewSet(viewsets.ModelViewSet):
     serializer_class = OrderSerializer
 
     def get_queryset(self) -> QuerySet[Order]:
-        """Возвращает queryset всех заказов."""
         return Order.objects.all()
 
     def perform_create(self, serializer: ModelSerializer) -> None:
         serializer.save()
 
-    def retrieve(
-        self, 
-        request: Request, 
-        *args: Any, 
-        **kwargs: Any
-    ) -> Response:
+    def retrieve(self, request: Request, *args, **kwargs) -> Response:
         instance = self.get_object()
         serializer = self.get_serializer(instance)
         return Response(serializer.data)
@@ -63,7 +53,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {"error": "Ошибка при создании заказа", "detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
     @transaction.atomic
@@ -75,7 +65,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {"error": "Ошибка при удалении заказа", "detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
     @action(detail=True, methods=["post"])
@@ -83,14 +73,14 @@ class OrderViewSet(viewsets.ModelViewSet):
     def add_items(self, request: Request, pk: Optional[int] = None) -> Response:
         """
         Добавляет позиции к существующему заказу.
-        
+
         Args:
             request (Request): HTTP запрос с данными позиций
             pk (int, optional): ID заказа
-            
+
         Returns:
             Response: Результат добавления позиций
-            
+
         Raises:
             DishNotFoundError: Если указанное блюдо не найдено
             OrderNotFoundError: Если заказ не найден
@@ -98,15 +88,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         try:
             order = self.get_object()
             serializer = OrderItemCreateSerializer(data=request.data, many=True)
-            
+
             if not serializer.is_valid():
                 return Response(
                     {"error": "Некорректные данные", "detail": serializer.errors},
-                    status=status.HTTP_400_BAD_REQUEST
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            # Проверяем существование всех блюд
-            dish_ids = [item['dish'] for item in serializer.validated_data]
+            dish_ids = [item["dish"] for item in serializer.validated_data]
             existing_dishes = Dish.objects.filter(id__in=dish_ids)
             if len(existing_dishes) != len(dish_ids):
                 raise DishNotFoundError()
@@ -119,42 +108,38 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {"error": "Ошибка при добавлении позиций", "detail": str(e)},
-                status=status.HTTP_400_BAD_REQUEST
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
     @action(detail=True, methods=["post"])
     def update_status(self, request, pk=None):
         order = self.get_object()
         new_status = request.data.get("status")
-        
-        # Проверяем наличие статуса в запросе
+
         if not new_status:
             return Response(
-                {"error": "Статус не указан"},
-                status=status.HTTP_400_BAD_REQUEST
+                {"error": "Статус не указан"}, status=status.HTTP_400_BAD_REQUEST
             )
-        
-        # Проверяем валидность статуса
+
         valid_transitions = {
-            'pending': ['ready', 'paid'],
-            'ready': ['paid'],
-            'paid': []
+            "pending": ["ready", "paid"],
+            "ready": ["paid"],
+            "paid": [],
         }
-        
+
         current_status = order.status
         if new_status not in valid_transitions.get(current_status, []):
             return Response(
-                {"error": f"Недопустимый переход из '{current_status}' в '{new_status}'"},
-                status=status.HTTP_400_BAD_REQUEST
+                {
+                    "error": f"Недопустимый переход из '{current_status}' в '{new_status}'"
+                },
+                status=status.HTTP_400_BAD_REQUEST,
             )
 
         order.status = new_status
         order.save()
-        
-        return Response({
-            "status": "success",
-            "new_status": new_status
-        })
+
+        return Response({"status": "success", "new_status": new_status})
 
     @action(detail=False, methods=["get"])
     def statistics(self, request):
@@ -166,7 +151,9 @@ class OrderViewSet(viewsets.ModelViewSet):
                 ]
                 or 0
             )
-            orders_by_status = Order.objects.values("status").annotate(count=Count("id"))
+            orders_by_status = Order.objects.values("status").annotate(
+                count=Count("id")
+            )
 
             return Response(
                 {
@@ -178,7 +165,7 @@ class OrderViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {"error": "Ошибка при получении статистики", "detail": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
 
 
@@ -204,5 +191,5 @@ class DishViewSet(viewsets.ModelViewSet):
         except Exception as e:
             return Response(
                 {"error": "Ошибка при получении популярных блюд", "detail": str(e)},
-                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
             )
