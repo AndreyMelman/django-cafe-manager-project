@@ -1,0 +1,14 @@
+/* Кастомные стили статусов */
+.status-waiting { background-color: #fff3cd; color: #856404; }
+.status-ready { background-color: #d4edda; color: #155724; }
+.status-paid { background-color: #cce5ff; color: #004085; }
+
+/* Анимации */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.new-order {
+    animation: fadeIn 0.5s ease-in;
+}
