@@ -1,10 +1,17 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib import messages
 from django.db.models import Sum
-from django.http import HttpRequest, HttpResponse
+from django.urls import reverse_lazy
 from django.views import View
-from django.views.generic import ListView, TemplateView, CreateView
+from django.views.generic import (
+    ListView,
+    TemplateView,
+    CreateView,
+    UpdateView,
+    DeleteView,
+)
 
+from .forms import OrderForm, OrderItemFormSet
 from .models import Order, OrderItem, Dish
 
 
@@ -34,62 +41,64 @@ class OrderListView(ListView):
         return context
 
 
-class AddOrderCreateView(View):
-    def get(self, request):
-        dishes = Dish.objects.all()
-        return render(request, "orders/add_order.html", {"dishes": dishes})
+class OrderCreateView(CreateView):
+    model = Order
+    form_class = OrderForm
+    template_name = "orders/create_order.html"
+    success_url = reverse_lazy("order_list")
 
-    def post(self, request):
-        try:
-            table_number = int(request.POST.get("table_number"))
-            order = Order.objects.create(table_number=table_number)
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
 
-            dishes = request.POST.getlist("dish")
-            quantities = request.POST.getlist("quantity")
-
-            for dish_id, quantity in zip(dishes, quantities):
-                dish = Dish.objects.get(id=dish_id)
-                OrderItem.objects.create(
-                    order=order,
-                    dish=dish,
-                    quantity=int(quantity),
-                    price=dish.price * int(quantity),
-                )
-
-            messages.success(request, f"Заказ #{order.id} успешно создан!")
-            return redirect("order_list")
-
-        except Exception as e:
-            messages.error(request, f"Ошибка: {str(e)}")
-            return self.get(request)
-
-
-class UpdateStatusView(View):
-    def post(self, request, pk):
-        order = get_object_or_404(Order, pk=pk)
-        new_status = request.POST.get("status")
-
-        if new_status in dict(Order.STATUS_CHOICES):
-            order.status = new_status
-            order.save()
-            messages.success(request, f"Статус заказа #{order.id} обновлен")
+        if self.request.POST:
+            context["formset"] = OrderItemFormSet(self.request.POST)
         else:
-            messages.error(request, "Неверный статус")
+            context["formset"] = OrderItemFormSet(queryset=OrderItem.objects.none())
+        return context
 
-        return redirect("order_list")
+    def form_valid(self, form):
+        context = self.get_context_data()
+        formset = context["formset"]
+
+        if formset.is_valid():
+            self.object = form.save()
+
+            order_items = formset.save(commit=False)
+            for item in order_items:
+                item.order = self.object
+                item.save()
+
+            messages.success(self.request, f"Заказ #{self.object.id} успешно создан!")
+            return super().form_valid(form)
+        else:
+            return self.form_invalid(form)
 
 
-class DeleteOrderView(View):
-    def get(self, request, pk):
-        order = get_object_or_404(Order, pk=pk)
-        return render(request, "orders/confirm_delete.html", {"order": order})
+class UpdateStatusView(UpdateView):
+    model = Order
+    fields = ["status"]
+    success_url = reverse_lazy("order_list")
 
-    def post(self, request, pk):
-        order = get_object_or_404(Order, pk=pk)
+    def form_valid(self, form):
+        new_status = form.cleaned_data.get("status")
+        if new_status in dict(Order.STATUS_CHOICES):
+            messages.success(self.request, f"Статус заказа #{self.object.id} обновлен")
+            return super().form_valid(form)
+        else:
+            messages.error(self.request, "Неверный статус")
+            return self.form_invalid(form)
+
+
+class DeleteOrderView(DeleteView):
+    model = Order
+    success_url = reverse_lazy("order_list")
+
+    def delete(self, request, *args, **kwargs):
+        order = self.get_object()
         order_id = order.id
-        order.delete()
+        response = super().delete(request, *args, **kwargs)
         messages.success(request, f"Заказ #{order_id} удален")
-        return redirect("order_list")
+        return response
 
 
 class RevenueView(TemplateView):
