@@ -85,10 +85,10 @@ WSGI_APPLICATION = "cafe_manager.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.postgresql",
-        "NAME": "cafe",
-        "USER": "user",
-        "PASSWORD": "1234",
-        "HOST": "127.0.0.1",
+        "NAME": "postgres",
+        "USER": "postgres",
+        "PASSWORD": "postgres",
+        "HOST": "db",
         "PORT": "5432",
     }
 }
